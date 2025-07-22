@@ -1,0 +1,20 @@
+# these scripts exist solely so I can share some automations without directly 
+# exposing secrets.  Rather than keeping these as scripts, you may prefer to 
+# simply include the actions in the automations that use the scripts.
+
+lock_audi:
+  sequence:
+    - action: audiconnect.execute_vehicle_action
+      data:
+        vin: !secret audi_vin
+        action: lock
+  alias: Lock Audi
+  description: ""
+
+refresh_audi_car_data:
+  sequence:
+    - action: audiconnect.refresh_vehicle_data
+      data:
+        vin: !secret audi_vin
+  alias: Refresh Audi Car Data
+  description: "this forces HA to get the latest car state directly from the car rather than the cloud cache"

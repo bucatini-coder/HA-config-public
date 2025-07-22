@@ -1,0 +1,27 @@
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+sensor: !include sensors.yaml
+#
+# recorder:
+#   exclude:
+#     entities:
+
+waste_collection_schedule:
+  sources:
+    - name: eastcambs_gov_uk
+      args:
+        uprn: 10002607055
+
+    - name: cornwall_gov_uk
+      args:
+        postcode: PL255DX
+        housenumberorname: 53
+        uprn: 100041159316

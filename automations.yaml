@@ -1,0 +1,456 @@
+- id: '1704583916372'
+  alias: Saving Session - Automatically join
+  description: ''
+  use_blueprint:
+    path: BottlecapDave/octopus_energy_octoplus_join_saving_session.yml.yaml
+    input:
+      saving_session_event_entity: event.octopus_energy_a_76ff78b0_octoplus_saving_session_events
+- id: '1704584061093'
+  alias: Octopus - Spin Wheel of Fortune
+  description: ''
+  use_blueprint:
+    path: BottlecapDave/octopus_energy_spin_wheel_of_fortune_single.yml.yaml
+    input:
+      wheel_of_fortune_spins: sensor.octopus_energy_a_76ff78b0_wheel_of_fortune_spins_electricity
+- id: '1731197163375'
+  alias: Powerwall - charge during daytime off-peak
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.octopus_energy_electricity_19l2175647_1030070582639_current_rate
+    below: 0.1
+  - trigger: state
+    entity_id:
+    - binary_sensor.octopus_energy_a_76ff78b0_intelligent_dispatching
+    from:
+    to: 'on'
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.octopus_energy_a_76ff78b0_octoplus_saving_sessions
+    state: 'off'
+  - condition: numeric_state
+    entity_id: sensor.remaining_solar_today
+    below: 10
+  - condition: state
+    entity_id: binary_sensor.volty_towers_grid_status
+    state: 'on'
+  - condition: state
+    entity_id: binary_sensor.octopus_energy_electricity_19l2175647_1030070582639_off_peak
+    state: 'off'
+  actions:
+  - device_id: 80637a3570616abd1f1236774c5947fd
+    domain: number
+    entity_id: fbd29b9f5e875c146bf712ae56796acd
+    type: set_value
+    value: 100
+    alias: Set Volty Towers Backup Reserve to 100%
+  mode: single
+- id: '1731199079502'
+  alias: Powerwall - reset to default at end of daytime intelligent charging period
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.octopus_energy_a_76ff78b0_intelligent_dispatching
+    from: 'on'
+    to: 'off'
+  - trigger: numeric_state
+    entity_id:
+    - sensor.octopus_energy_electricity_19l2175647_1030070582639_current_rate
+    above: 0.1
+  conditions:
+  - type: is_battery_level
+    condition: device
+    device_id: 748c0caaf3683b3cbdce3e3904e8a9d5
+    entity_id: 98c1ff553e29c60f9e5cde16f2c80a21
+    domain: sensor
+    above: 24
+    alias: Powerwall above default backup reserve level
+  - condition: numeric_state
+    entity_id: sensor.myenergi_3_orchard_close_power_charging
+    below: 1000
+  - condition: state
+    entity_id: binary_sensor.octopus_energy_electricity_19l2175647_1030070582639_off_peak
+    state: 'off'
+  actions:
+  - device_id: 80637a3570616abd1f1236774c5947fd
+    domain: number
+    entity_id: fbd29b9f5e875c146bf712ae56796acd
+    type: set_value
+    value: 20
+    alias: Reset Powerwall reseve backup to default
+  mode: single
+- id: '1731200918507'
+  alias: Powerwall - stop discharging during car charging
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.myenergi_3_orchard_close_power_charging
+    above: 1000
+  conditions:
+  - condition: numeric_state
+    entity_id: sensor.powerwall_backup_reserve
+    below: sensor.powerwall_charge
+    alias: Powerwall backup reserve less than current charge level
+  - condition: state
+    entity_id: binary_sensor.octopus_energy_a_76ff78b0_intelligent_dispatching
+    state: 'off'
+  - condition: state
+    entity_id: binary_sensor.octopus_energy_electricity_19l2175647_1030070582639_off_peak
+    state: 'off'
+  actions:
+  - action: number.set_value
+    metadata: {}
+    data:
+      value: '{{ states(''sensor.powerwall_charge'') | int(default=20) }}'
+    target:
+      entity_id: number.volty_towers_backup_reserve
+    alias: set Powerwall backup reserve to current charge level
+  mode: single
+- id: '1731201470399'
+  alias: Powerwall - reset to default backup reserve when car charging finishes
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.myenergi_3_orchard_close_power_charging
+    below: 1000
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.octopus_energy_a_76ff78b0_intelligent_dispatching
+    state: 'off'
+  - alias: Powerwall backup reserve above default
+    condition: numeric_state
+    entity_id: sensor.powerwall_backup_reserve
+    above: 24
+  - condition: state
+    entity_id: binary_sensor.octopus_energy_electricity_19l2175647_1030070582639_off_peak
+    state: 'off'
+  actions:
+  - device_id: 80637a3570616abd1f1236774c5947fd
+    domain: number
+    entity_id: fbd29b9f5e875c146bf712ae56796acd
+    type: set_value
+    value: 20
+    alias: reset Powerwall backup reserve to default
+  mode: single
+- id: '1731255232481'
+  alias: Saving Sessions - Join Automatically
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - event.octopus_energy_a_76ff78b0_octoplus_saving_session_events
+    attribute: available_events
+  conditions:
+  - condition: template
+    value_template: '{{ state_attr(''event.octopus_energy_a_76ff78b0_octoplus_saving_session_events'',
+      ''available_events'') | length > 0 }}'
+    alias: an un-joined saving session exists
+  actions:
+  - action: input_datetime.set_datetime
+    metadata: {}
+    data:
+      datetime: '{{ state_attr(''event.octopus_energy_a_76ff78b0_octoplus_saving_session_events'',
+        ''available_events'')[0][''start''] }}'
+    target:
+      entity_id: input_datetime.saving_session_start
+    alias: set saving session start date time
+  - action: input_datetime.set_datetime
+    metadata: {}
+    data:
+      datetime: '{{ state_attr(''event.octopus_energy_a_76ff78b0_octoplus_saving_session_events'',
+        ''available_events'')[0][''end''] }}'
+    target:
+      entity_id: input_datetime.saving_session_end
+    alias: set saving session end date time
+  - action: calendar.create_event
+    metadata: {}
+    data:
+      summary: Saving Session
+      start_date_time: '{{ states(''input_datetime.saving_session_start'') }}'
+      end_date_time: '{{ states(''input_datetime.saving_session_end'') }}'
+    target:
+      entity_id: calendar.octopus_saving_sessions
+    alias: add new saving session calendar event
+  - action: octopus_energy.join_octoplus_saving_session_event
+    metadata: {}
+    data:
+      event_code: '{{ state_attr(''event.octopus_energy_a_76ff78b0_octoplus_saving_session_events'',
+        ''available_events'')[0][''code''] }}'
+    target:
+      entity_id: event.octopus_energy_a_76ff78b0_octoplus_saving_session_events
+    alias: join saving session
+  - action: notify.mobile_app_simons_iphone_13
+    metadata: {}
+    data:
+      message: '
+
+        Joined a new Octopus Energy saving session. It starts at {{ states(''input_datetime.saving_session_start'').strftime(''%H:%M'')
+        }} on {{         states(''input_datetime.saving_session_start'').day }}/{{
+        event_start.month }}'
+    alias: send notification to my phone
+  mode: single
+- id: '1731260556998'
+  alias: Saving Session - precharge Powerwall
+  description: if the power wall needs it, charge it to 50% before the session starts
+  triggers:
+  - trigger: calendar
+    entity_id: calendar.octopus_saving_sessions
+    event: start
+    offset: '-1:0:0'
+    alias: 1 hour before next Octopus saving session
+  conditions:
+  - alias: Powerwall reserve level is less than 50%
+    type: is_battery_level
+    condition: device
+    device_id: 748c0caaf3683b3cbdce3e3904e8a9d5
+    entity_id: 98c1ff553e29c60f9e5cde16f2c80a21
+    domain: sensor
+    below: 50
+  actions:
+  - device_id: 80637a3570616abd1f1236774c5947fd
+    domain: number
+    entity_id: fbd29b9f5e875c146bf712ae56796acd
+    type: set_value
+    value: 50
+    alias: charge powerwall to 50%
+  mode: single
+- id: '1731260910428'
+  alias: Saving Session - set-up for start of session
+  description: ''
+  triggers:
+  - trigger: calendar
+    entity_id: calendar.octopus_saving_sessions
+    event: start
+    offset: -0:2:0
+    alias: 2 minutes before next Octopus saving session
+  conditions: []
+  actions:
+  - device_id: 80637a3570616abd1f1236774c5947fd
+    domain: number
+    entity_id: fbd29b9f5e875c146bf712ae56796acd
+    type: set_value
+    value: 20
+    alias: set Powerwall reserve to default
+  - device_id: e5c32a1a025f8afd2819a05273d497f8
+    domain: select
+    entity_id: e42297001914208d4ae5803ada5a101e
+    type: select_option
+    option: Stopped
+    alias: stop charger in garage from charging
+  - device_id: 690b48cea54e229a0b9fd79ae8ce509f
+    domain: select
+    entity_id: 1772b3d5af7691a32a20315e6297f2cd
+    type: select_option
+    option: Stopped
+    alias: stop charger outside garage from charging
+  mode: single
+- id: '1731261056836'
+  alias: Saving Session - reset at end of session
+  description: ''
+  triggers:
+  - trigger: calendar
+    entity_id: calendar.octopus_saving_sessions
+    event: end
+    offset: 0:0:0
+  conditions: []
+  actions:
+  - device_id: e5c32a1a025f8afd2819a05273d497f8
+    domain: select
+    entity_id: e42297001914208d4ae5803ada5a101e
+    type: select_option
+    option: Eco+
+    alias: set charger in garage back to Eco+
+  - device_id: 690b48cea54e229a0b9fd79ae8ce509f
+    domain: select
+    entity_id: 1772b3d5af7691a32a20315e6297f2cd
+    type: select_option
+    option: Eco+
+    alias: set charger outside garage back to Eco+
+  mode: single
+- id: '1731853056111'
+  alias: Powerwall - smart charging still active at end of off-peak period
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.octopus_energy_electricity_19l2175647_1030070582639_off_peak
+    from: 'on'
+    to: 'off'
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.octopus_energy_a_76ff78b0_intelligent_dispatching
+    state: 'on'
+  actions:
+  - device_id: 80637a3570616abd1f1236774c5947fd
+    domain: number
+    entity_id: fbd29b9f5e875c146bf712ae56796acd
+    type: set_value
+    value: 100
+    alias: Set PW backup reserve to 100%
+  mode: single
+- id: '1731887374352'
+  alias: Powerwall - reset backup reserve at start of off-peak period
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.octopus_energy_electricity_19l2175647_1030070582639_off_peak
+    to: 'on'
+  conditions:
+  - condition: numeric_state
+    entity_id: sensor.volty_towers_backup_reserve
+    above: 24
+    alias: PW backup reserve higher than default
+  actions:
+  - device_id: 80637a3570616abd1f1236774c5947fd
+    domain: number
+    entity_id: fbd29b9f5e875c146bf712ae56796acd
+    type: set_value
+    value: 20
+    alias: Reset PW backup reserve to default
+  mode: single
+- id: '1731962786836'
+  alias: Free session start - charge PW and plugged-in cars
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.octopus_energy_a_76ff78b0_octoplus_free_electricity_session
+    from:
+    to: 'on'
+  conditions: []
+  actions:
+  - device_id: 80637a3570616abd1f1236774c5947fd
+    domain: number
+    entity_id: fbd29b9f5e875c146bf712ae56796acd
+    type: set_value
+    value: 100
+    alias: charge powerwall
+  - if:
+    - condition: state
+      entity_id: sensor.myenergi_outside_plug_status
+      state: EV Connected
+    then:
+    - device_id: 690b48cea54e229a0b9fd79ae8ce509f
+      domain: select
+      entity_id: 1772b3d5af7691a32a20315e6297f2cd
+      type: select_option
+      option: Fast
+    alias: charge outside car if plugged-in
+  - if:
+    - condition: state
+      entity_id: sensor.myenergi_garage_plug_status
+      state: EV Connected
+    then:
+    - device_id: e5c32a1a025f8afd2819a05273d497f8
+      domain: select
+      entity_id: e42297001914208d4ae5803ada5a101e
+      type: select_option
+      option: Fast
+    alias: charge garage car if plugged-in
+  mode: single
+- id: '1731962992673'
+  alias: Free Session End - reset everything
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.octopus_energy_a_76ff78b0_octoplus_free_electricity_session
+    to: 'off'
+  conditions: []
+  actions:
+  - device_id: 80637a3570616abd1f1236774c5947fd
+    domain: number
+    entity_id: fbd29b9f5e875c146bf712ae56796acd
+    type: set_value
+    value: 20
+    alias: reset powerwall reserve to default
+  - device_id: 690b48cea54e229a0b9fd79ae8ce509f
+    domain: select
+    entity_id: 1772b3d5af7691a32a20315e6297f2cd
+    type: select_option
+    option: Eco+
+    alias: change outside charger to Eco+
+  - device_id: e5c32a1a025f8afd2819a05273d497f8
+    domain: select
+    entity_id: e42297001914208d4ae5803ada5a101e
+    type: select_option
+    option: Eco+
+    alias: change garage charger to Eco+
+  mode: single
+- id: '1732374881865'
+  alias: Set target charge amount when car plugged into garage Zappi
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - sensor.myenergi_garage_plug_status
+    to: EV Connected
+  conditions: []
+  actions:
+  - action: script.lock_audi
+    metadata: {}
+    data: {}
+    alias: Lock the car
+  - action: script.refresh_audi_car_data
+    metadata: {}
+    data: {}
+    alias: refresh car state
+  - action: number.set_value
+    metadata: {}
+    data:
+      value: '{{ states(''sensor.oig_charge_needed'') }}'
+    target:
+      entity_id: number.octopus_energy_a_76ff78b0_intelligent_charge_target
+    alias: set OIG charge target
+  - if:
+    - condition: device
+      device_id: a356315d9fa0548a4c6411c6a4e96afc
+      domain: cover
+      entity_id: 009960396bd209ee4f20415fba329c33
+      type: is_open
+    then:
+    - delay:
+        hours: 0
+        minutes: 5
+        seconds: 0
+        milliseconds: 0
+    - device_id: a356315d9fa0548a4c6411c6a4e96afc
+      domain: cover
+      entity_id: 009960396bd209ee4f20415fba329c33
+      type: close
+    alias: Close the garage door it it's open
+  mode: single
+- id: '1732832732461'
+  alias: Raise notification if charging stops unexpectedly
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - sensor.myenergi_garage_plug_status
+    from: Charging
+    to: Waiting for EV
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.octopus_energy_a_76ff78b0_intelligent_dispatching
+    state: 'on'
+  - condition: template
+    value_template: '{{ states(''sensor.piglet_target_state_of_charge'') | int - states(''sensor.piglet_state_of_charge'')
+      | int > 10 }}'
+    alias: Confirm car not charged to within 10% of target
+  actions:
+  - action: notify.mobile_app_simons_iphone_13
+    metadata: {}
+    data:
+      message: Open myenergi app to check status of charging
+      title: Intelligent Charging
+      data:
+        subtitle: Charging Stopped Unexpectedly
+        url: myenergi://
+        push:
+          interruption-level: critical
+  mode: single

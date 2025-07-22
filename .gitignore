@@ -1,0 +1,14 @@
+# ignore specific files
+secrets.yaml
+known_devices.yaml
+cache.json
+*.log*
+home-assistant.*
+home-assistant_v2.*
+
+#ignored folders
+.storage
+.cloud
+.google.token
+image
+
