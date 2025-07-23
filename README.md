@@ -39,6 +39,15 @@ In some places, you will need to replace placeholder values for entities with th
 
 ### List of automations
 
+| Group        | Automation                                                             | What it does                                                                                                 | UI screenshot |
+|--------------|------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|---------------|
+| Car Charging | Powerwall - reset to default backup reserve when car charging finishes | allows my power wall battery to resume discharging for home use once my car has finished charging            |               |
+| Car Charging | Powerwall - stop discharging during car charging                       | forces the power wall to preserve it's current level of charge rather than being drained by charging your car |               |
+| Car Charging | Raise notification if charging stops unexpectedly                      | this sends a notification to the HA app on my phone if charging stops unexpectedly                           |               |
+| Car Charging | Set target charge amount when car plugged into garage Zappi            | automates setting up the correct charging schedule with Octopus by calculating how much charge my car needs  | Yes           |
+|              |                                                                        |                                                                                                              |               |
+|              |                                                                        |                                                                                                              |               |
+|              |                                                                        |                                                                                                              |               |
 
 
 ---
@@ -58,14 +67,16 @@ My 'real' sensors.yaml file contains a lot of other sensors to drive different d
 
 ## scripts.yaml
 
-This file contains two scripts to control my car.  This is specific to the Audi integration and may work differenly for your EV.
+This file contains two scripts to control my car.  This is specific to the Audi integration and may work differenly for your EV if it's a different brand.
 I have made these car commands into scripts to allow me to keep my car's VIN private rather than posting it into Github.
 You could choose to just put the commands directly into the automation that needs them rather than keeping them as scripts.  
 If you keep the scripts, you will need to either:
 
-a) change '!secret audi_vin' to just be your car's VIN (which you can find in your MyAudi app, or by logging into myaudiconnect.com), or
-b) add a secrets.yaml file and include the line 
-    `audi_vin: WAUxxxxxxxxxxxxxx` where WAUxxxxxxxxxxxxxx is your car's actual VIN number, which is a 17-digit code starting with WAU
+1. change '!secret audi_vin' to just be your car's VIN, or
+2. add a secrets.yaml file and include the line 
+    `audi_vin: WAUxxxxxxxxxxxxxx` where WAUxxxxxxxxxxxxxx is your car's actual VIN number
+
+VINs are 17-character codes that uniquely identify your car.  For Audis, you can find it in your MyAudi app, or by logging into myaudiconnect.com.  For Audis, VINs start with WAU.  Other manufacturers will have a different prefix.
     
 ---
 
