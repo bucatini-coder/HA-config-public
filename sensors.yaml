@@ -2,81 +2,6 @@
 
 - platform: template
   sensors:
-    ## sensor for remaining solar generation today ##
-    remaining_solar_today:
-      friendly_name: "Forecast Remaining Solar Today"
-      unit_of_measurement: "kW"
-      value_template: >
-        {{ states('sensor.energy_production_today_remaining') | int + states('sensor.energy_production_today_remaining_2') | int}}
-
-    ## display energy tariff in GBP/kWh
-    current_rate_electricity:
-      friendly_name: "Current Rate Electricity"
-      unit_of_measurement: GBP/kWh
-      value_template: >
-        {{ states('sensor.octopus_energy_electricity_19l2175647_1030070582639_current_rate') | float() | round(4, 'common') }}
-
-    ## sensors for actual power flow           ##
-    ## used by "tesla style solar power card"  ##
-    ## all sensors in Watts (not kW)           ##
-
-    # grid sensor
-    grid_now:
-      friendly_name: "grid power"
-      unit_of_measurement: "W"
-      icon_template: "mdi:transmission-tower"
-      device_class: "power"
-      value_template: >
-        {{ (states('sensor.powerwall_site_now') | float(0) * 1000) | int(default=0) }}
-
-    # battery sensor
-    # consumption must be -ve
-    battery_now:
-      friendly_name: "battery power"
-      unit_of_measurement: "W"
-      icon_template: "mdi:battery-charging"
-      device_class: "power"
-      value_template: >
-        {{ (states('sensor.powerwall_battery_now') | float(0) * 1000) | int(default=0) }}
-
-    # sensor must always be 0 or positive (powerwall_load_now is always +ve)
-    load_now:
-      friendly_name: "house load"
-      unit_of_measurement: "W"
-      icon_template: "mdi:home-lightning-bolt"
-      device_class: "power"
-      value_template: >
-        {{ (states('sensor.powerwall_load_now') | float(0) * 1000) | int(default=0) }}
-
-    # sensor must always be 0 or positive (solar_now can be marginally -ve when no sun)
-    solar_now:
-      friendly_name: "solar power"
-      unit_of_measurement: "W"
-      icon_template: "mdi:solar-power-variant"
-      device_class: "power"
-      value_template: >
-        {% set solar_now = (states('sensor.powerwall_solar_now') | float(0) * 1000) | int(default=0) %}
-        {% set solar_now = solar_now if solar_now > 0 else 0 %}
-        {{ solar_now }}
-
-    # convert washing machine energy use to kWh
-    washing_maching_energy:
-      friendly_name: "washing machine energy use"
-      unit_of_measurement: "kWh"
-      icon_template: "mdi:washing-machine"
-      device_class: "energy"
-      value_template: >-
-        {{ states('sensor.smart_switch_washing_machine_energy') | float(0.0) / 1000 }}
-
-    # convert TV equipment energy use to kWh
-    tv_maching_energy:
-      friendly_name: "TV equipment energy use"
-      unit_of_measurement: "kWh"
-      icon_template: "mdi:television"
-      device_class: "energy"
-      value_template: >-
-        {{ states('sensor.smart_switch_tv_equipment_energy') | float(0.0) / 1000 }}
-
     # amount to charge car by on for Octopus Intelligent Go
     oig_charge_needed:
       friendly_name: "OIG charge needed"
@@ -87,17 +12,3 @@
         {% set needed = needed + 10 if needed > 10 else 10 %}
         {% set needed = needed if needed < 100 else 100 %}
         {{ needed }}
-
-## sensors for waste collection ##
-- platform: waste_collection_schedule
-  name: waste_collection
-
-- platform: waste_collection_schedule
-  source_index: 0
-  name: orchard_close_waste_collection
-  leadtime: 14
-
-- platform: waste_collection_schedule
-  source_index: 1
-  name: edgcumbe_rd_waste_collection
-  leadtime: 14
