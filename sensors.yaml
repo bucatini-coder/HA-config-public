@@ -1,3 +1,15 @@
+# this incudes a sensor to calculate the percentage charge to add to my car
+# I need to do this because the Zappi - Octopus integration works by the Octopus App asking me 
+# how much % charge to add to my car before it will schedule a charge for me.
+# Calculating this using my car's API allows we to automate that step rather than manually entering it every day.
+
+# SUBSTITUATIONS
+# [CAR] - that Audi integration inserts the name of your car into eneity names.  
+#         Check what the name of your car is in the integration and replace [CAR] with that name
+#         e.g. if your car is called 'Alice', [CAR]_target_state_of_charge
+#              would become alice_target_state_of_charge
+
+
 ## template sensors ##
 
 - platform: template
@@ -8,7 +20,7 @@
       unit_of_measurement: "%"
       icon_template: "mdi:ev-station"
       value_template: >-
-        {% set needed = states('sensor.piglet_target_state_of_charge') | int - states('sensor.piglet_state_of_charge') | int %}
+        {% set needed = states('sensor.[CAR]_target_state_of_charge') | int - states('sensor.[CAR]_state_of_charge') | int %}
         {% set needed = needed + 10 if needed > 10 else 10 %}
         {% set needed = needed if needed < 100 else 100 %}
         {{ needed }}
